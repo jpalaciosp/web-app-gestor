@@ -1,0 +1,79 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Captura de Documento</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <script src="https://telegram.org/js/telegram-web-app.js"></script>
+    <style>
+        body { font-family: sans-serif; padding: 20px; background-color: #f0f0f0; }
+        .container { max-width: 400px; margin: auto; padding: 20px; background: white; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); }
+        label { display: block; margin-top: 15px; font-weight: bold; }
+        input, select, textarea { width: 100%; padding: 10px; margin-top: 5px; border: 1px solid #ccc; border-radius: 4px; box-sizing: border-box; }
+        button { background-color: #0088cc; color: white; padding: 10px 15px; border: none; border-radius: 4px; cursor: pointer; margin-top: 20px; width: 100%; }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <h2>📸 Captura de Documento</h2>
+
+    <label for="foto">1. Foto del Documento:</label>
+    <input type="file" id="foto" accept="image/*" required>
+
+    <label for="tipo">2. Tipo de Documento:</label>
+    <select id="tipo" required>
+        <option value="" disabled selected>Selecciona una opción</option>
+        <option value="Factura">Factura</option>
+        <option value="Recibo de Caja">Recibo de Caja</option>
+        <option value="Comprobante">Comprobante</option>
+        <option value="Identidad">Identidad</option>
+        <option value="Otros">Otros</option>
+    </select>
+
+    <label for="descripcion">3. Descripción (Máx. 100 caracteres):</label>
+    <textarea id="descripcion" maxlength="100" rows="3" required></textarea>
+
+    <button onclick="sendData()">Enviar y Procesar</button>
+</div>
+
+<script>
+    // 1. Inicializa la Web App
+    Telegram.WebApp.ready();
+
+    async function sendData() {
+        // Valida que los campos requeridos estén llenos
+        if (!document.getElementById('tipo').value || !document.getElementById('descripcion').value || !document.getElementById('foto').files.length) {
+            alert("Por favor, completa todos los campos.");
+            return;
+        }
+
+        const tipo = document.getElementById('tipo').value;
+        const desc = document.getElementById('descripcion').value;
+        const file = document.getElementById('foto').files[0];
+
+        // 2. Convierte la foto a Base64 (un texto largo) para enviarla a n8n
+        const fotoBase64 = await new Promise((resolve, reject) => {
+            const reader = new FileReader();
+            reader.onloadend = () => resolve(reader.result.split(',')[1]); // Solo la data Base64
+            reader.onerror = reject;
+            reader.readAsDataURL(file);
+        });
+
+        // 3. Empaqueta los datos en un JSON
+        const dataToSend = {
+            tipo_documento: tipo,
+            descripcion_documento: desc,
+            nombre_archivo: file.name,
+            foto_base64: fotoBase64
+        };
+
+        // 4. Envía el JSON a tu bot de Telegram (a tu webhook de n8n)
+        Telegram.WebApp.sendData(JSON.stringify(dataToSend));
+        
+        // 5. Cierra la ventana de la Web App
+        Telegram.WebApp.close(); 
+    }
+</script>
+
+</body>
+</html>
