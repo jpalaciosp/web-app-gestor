@@ -40,6 +40,9 @@
     // 1. Inicializa la Web App
     Telegram.WebApp.ready();
 
+    // 🛑 IMPORTANTE: Esta es la URL de tu Webhook HTTP de PRUEBA 🛑
+    const WEBHOOK_TEST_URL = "https://desarrollo-n8n.orrao2.easypanel.host/webhook-test/GestDocs";
+
     async function sendData() {
         // Valida que los campos requeridos estén llenos
         if (!document.getElementById('tipo').value || !document.getElementById('descripcion').value || !document.getElementById('foto').files.length) {
@@ -51,7 +54,7 @@
         const desc = document.getElementById('descripcion').value;
         const file = document.getElementById('foto').files[0];
 
-        // 2. Convierte la foto a Base64 (un texto largo) para enviarla a n8n
+        // 2. Convierte la foto a Base64 (un texto largo) para enviarla
         const fotoBase64 = await new Promise((resolve, reject) => {
             const reader = new FileReader();
             reader.onloadend = () => resolve(reader.result.split(',')[1]); // Solo la data Base64
@@ -64,12 +67,30 @@
             tipo_documento: tipo,
             descripcion_documento: desc,
             nombre_archivo: file.name,
-            foto_base64: fotoBase64
+            foto_base64: fotoBase64,
+            // Añade el ID del chat si necesitas responder directamente al usuario
+            chat_id: Telegram.WebApp.initDataUnsafe.user.id 
         };
 
-        // 4. Envía el JSON a tu bot de Telegram (a tu webhook de n8n)
-        Telegram.WebApp.sendData(JSON.stringify(dataToSend));
-        
+        // 🛑 4. Envío Directo al Webhook HTTP de n8n (Modo Test) 🛑
+        // Esto envía el JSON como POST a tu URL de prueba.
+        try {
+            const response = await fetch(WEBHOOK_TEST_URL, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(dataToSend)
+            });
+
+            if (response.ok) {
+                // Si el envío fue exitoso, muestra una confirmación
+                Telegram.WebApp.showAlert('Documento enviado correctamente al Webhook de prueba.');
+            } else {
+                Telegram.WebApp.showAlert('Error al enviar los datos al Webhook: ' + response.status);
+            }
+        } catch (error) {
+            Telegram.WebApp.showAlert('Error de conexión: ' + error.message);
+        }
+
         // 5. Cierra la ventana de la Web App
         Telegram.WebApp.close(); 
     }
